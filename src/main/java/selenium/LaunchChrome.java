@@ -14,8 +14,9 @@ public class LaunchChrome {
 	
     @SuppressWarnings("deprecation")
 	public static void main(String[] args) {
-    	System.setProperty("webdriver.chrome.driver", "C:/Users/haydencordeiro/Pictures/chromedriver.exe");
+    	System.setProperty("webdriver.chrome.driver", "C:/Users/Sundar/Desktop/ACC/Project/chromedriver-win64/chromedriver-win64/chromedriver.exe");
         WebDriver driver = new ChromeDriver();
+        
 
 //        driver.get("https://www.zehrs.ca/");
         driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
@@ -27,19 +28,28 @@ public class LaunchChrome {
 //
 //        
 //        searchBox.sendKeys(Keys.RETURN);
-        driver.get("https://www.zehrs.ca/search?search-bar=pears");
-
+//        Below code lists all the products in the zehrs
+        
+        
+        String[] websites = {"https://www.zehrs.ca/search?search-bar=Eggs","https://www.nofrills.ca/search?search-bar=Eggs"};
+        
+        for(int j=0;j<websites.length;j++)
+        {
+        driver.get(websites[j]);    
+        System.out.println("Website  - "+websites[j]);
+        driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
         List<WebElement> productsDiv = driver.findElements(By.cssSelector("[class=\"product-tile\"]"));
         String productName, sellingPrice, comparisionDetails;
-        for( int i =0 ; i < productsDiv.size(); i++) {
+        System.out.println("Product Name                       |Product Price                 |Description");
+        for( int i =0 ; i < 3; i++) {
         	productName = productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
         	sellingPrice = productsDiv.get(i).findElement(By.className("selling-price-list--product-tile")).getText();
         	comparisionDetails = productsDiv.get(i).findElement(By.className("comparison-price-list__item__price")).getText();
-        	System.out.println("Product Name: "+ productName);
-        	System.out.println("Product Price: "+ sellingPrice + " Description: "+ comparisionDetails);
+        	System.out.println(productName+"            "+sellingPrice+"                  "+comparisionDetails);
         }
-        
-        driver.quit();
+        System.out.println("-----------------------------------------------------------------------------------------------");
+
+        }
     }
     }
 
