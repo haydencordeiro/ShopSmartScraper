@@ -8,13 +8,25 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.Keys;
+import java.util.ArrayList; // import the ArrayList class
 
 public class LaunchChrome {
 
-	
+    public static ArrayList<String> getWebsites(){
+    	ArrayList<String> output = new ArrayList<String>();
+    	String[] searchTerms = { "Eggs", "Apples" };
+        String[] mainURLS = {"https://www.zehrs.ca/search?search-bar=","https://www.nofrills.ca/search?search-bar="};
+        for(String mainURL: mainURLS) {            	
+        	for(String searchTerm: searchTerms) {
+        		output.add(mainURL+searchTerm);
+        	}
+        }
+        return output;
+    }
+    
     @SuppressWarnings("deprecation")
 	public static void main(String[] args) {
-    	System.setProperty("webdriver.chrome.driver", "C:/Users/Sundar/Desktop/ACC/Project/chromedriver-win64/chromedriver-win64/chromedriver.exe");
+    	System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
         WebDriver driver = new ChromeDriver();
         
 
@@ -29,18 +41,19 @@ public class LaunchChrome {
 //        
 //        searchBox.sendKeys(Keys.RETURN);
 //        Below code lists all the products in the zehrs
+
         
+        ArrayList<String> websites = getWebsites();
         
-        String[] websites = {"https://www.zehrs.ca/search?search-bar=Eggs","https://www.nofrills.ca/search?search-bar=Eggs"};
-        
-        for(int j=0;j<websites.length;j++)
+        for(int j=0;j<websites.size();j++)
         {
-        driver.get(websites[j]);    
-        System.out.println("Website  - "+websites[j]);
+        driver.get(websites.get(j));    
+        System.out.println("Website  - "+websites.get(j));
         driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
         List<WebElement> productsDiv = driver.findElements(By.cssSelector("[class=\"product-tile\"]"));
         String productName, sellingPrice, comparisionDetails;
         System.out.println("Product Name                       |Product Price                 |Description");
+        
         for( int i =0 ; i < 3; i++) {
         	productName = productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
         	sellingPrice = productsDiv.get(i).findElement(By.className("selling-price-list--product-tile")).getText();
@@ -50,6 +63,6 @@ public class LaunchChrome {
         System.out.println("-----------------------------------------------------------------------------------------------");
 
         }
-    }
+        driver.close();    }
     }
 
