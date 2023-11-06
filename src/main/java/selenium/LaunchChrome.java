@@ -16,6 +16,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.openqa.selenium.JavascriptExecutor;
 
 public class LaunchChrome {
     public static class Product{
@@ -23,11 +24,12 @@ public class LaunchChrome {
         String productSellingPrice;
         String productThumbnail;
         String productComparisonDetails;
+        String productURL;
 
     }
     public static ArrayList<String> getWebsites(){
     	ArrayList<String> output = new ArrayList<String>();
-    	String[] searchTerms = { "Eggs" };
+    	String[] searchTerms = { "Eggs", "Apples", "Orange Juices", "Vegetable Oil", "Peanut Butter", "Instant Noodles", "Milk"};
         String[] mainURLS = {"https://www.zehrs.ca/search?search-bar=","https://www.nofrills.ca/search?search-bar="};
         for(String mainURL: mainURLS) {            	
         	for(String searchTerm: searchTerms) {
@@ -42,9 +44,6 @@ public class LaunchChrome {
         return gson.toJson(dataBase);
     }
 
-    public static void sendDataToDatabase(String data){
-
-    }
 
     public static void sendPostRequest(String endpoint, String jsonData) throws Exception {
         URL url = new URL(endpoint);
@@ -92,13 +91,15 @@ public class LaunchChrome {
         driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
         List<WebElement> productsDiv = driver.findElements(By.cssSelector("[class=\"product-tile\"]"));
         String productName, sellingPrice, comparisionDetails,productThumbnail;
-        for( int i =0 ; i < 3; i++) {
+        for( int i =4 ; i < 10; i++) {
+            Thread.sleep(3000);
+            if (i == 4) ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight/5)");
             Product newProduct = new Product();
             newProduct.productThumbnail = productsDiv.get(i).findElement(By.className("responsive-image--product-tile-image")).getAttribute("src");
             newProduct.productName = productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
             newProduct.productSellingPrice = productsDiv.get(i).findElement(By.className("selling-price-list--product-tile")).getText();
             newProduct.productComparisonDetails = productsDiv.get(i).findElement(By.className("comparison-price-list__item__price")).getText();
-
+            newProduct.productURL = websites.get(j);
             dataBase.add(newProduct);
         }
         }
