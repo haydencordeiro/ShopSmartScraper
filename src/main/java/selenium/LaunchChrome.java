@@ -17,6 +17,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.openqa.selenium.JavascriptExecutor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class LaunchChrome {
     public static class Product{
@@ -31,7 +34,7 @@ public class LaunchChrome {
     	ArrayList<String> output = new ArrayList<String>();
     	String[] searchTerms = { "Eggs", "Apples", "Orange Juices", "Vegetable Oil", "Peanut Butter", "Instant Noodles", "Milk"};
         String[] mainURLS = {"https://www.zehrs.ca/search?search-bar=","https://www.nofrills.ca/search?search-bar="};
-        for(String mainURL: mainURLS) {            	
+        for(String mainURL: mainURLS) {
         	for(String searchTerm: searchTerms) {
         		output.add(mainURL+searchTerm);
         	}
@@ -73,9 +76,9 @@ public class LaunchChrome {
             connection.disconnect();
         }
     }
-    
+
     @SuppressWarnings("deprecation")
-	public static void main(String[] args) throws Exception {
+	public static void mainHelper() throws Exception {
     	System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
         WebDriver driver = new ChromeDriver();
 
@@ -92,15 +95,20 @@ public class LaunchChrome {
         List<WebElement> productsDiv = driver.findElements(By.cssSelector("[class=\"product-tile\"]"));
         String productName, sellingPrice, comparisionDetails,productThumbnail;
         for( int i =4 ; i < 10; i++) {
-            Thread.sleep(3000);
-            if (i == 4) ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight/5)");
-            Product newProduct = new Product();
-            newProduct.productThumbnail = productsDiv.get(i).findElement(By.className("responsive-image--product-tile-image")).getAttribute("src");
-            newProduct.productName = productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
-            newProduct.productSellingPrice = productsDiv.get(i).findElement(By.className("selling-price-list--product-tile")).getText();
-            newProduct.productComparisonDetails = productsDiv.get(i).findElement(By.className("comparison-price-list__item__price")).getText();
-            newProduct.productURL = websites.get(j);
-            dataBase.add(newProduct);
+            try{
+                Thread.sleep(3000);
+                if (i == 4) ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight/5)");
+                Product newProduct = new Product();
+                newProduct.productThumbnail = productsDiv.get(i).findElement(By.className("responsive-image--product-tile-image")).getAttribute("src");
+                newProduct.productName = productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
+                newProduct.productSellingPrice = productsDiv.get(i).findElement(By.className("selling-price-list--product-tile")).getText();
+                newProduct.productComparisonDetails = productsDiv.get(i).findElement(By.className("comparison-price-list__item__price")).getText();
+                newProduct.productURL = websites.get(j);
+                dataBase.add(newProduct);
+            }catch (Exception e){
+
+            }
+
         }
         }
         System.out.println(dataBase);
@@ -111,5 +119,20 @@ public class LaunchChrome {
 
         sendPostRequest("http://localhost:8080/insertdata", jsonString);
     }
+
+
+    public static void main(String[] args) {
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+        // Schedule the task to run every 60 minutes
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                System.out.println("Executing task...");
+                mainHelper(); // main metho
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 0, 60, TimeUnit.MINUTES);
     }
+}
 
