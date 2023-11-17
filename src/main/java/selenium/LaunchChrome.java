@@ -72,10 +72,10 @@ public class LaunchChrome {
         ObjectMapper objectMapper = new ObjectMapper();
         List<SearchTerm> searchCountsJson = objectMapper.readValue(fetchSearchTerms("http://localhost:8080/allSearchCounts"),  new TypeReference<List<SearchTerm>>() {});
     	ArrayList<String> searchTerms = new ArrayList<String>();
-        searchTerms.add("Eggs");
-        searchTerms.add("Milk");
-        searchTerms.add("Instant Noodles");
-        searchTerms.add("Orange Juice");
+//        searchTerms.add("Eggs");
+//        searchTerms.add("Milk");
+//        searchTerms.add("Instant Noodles");
+//        searchTerms.add("Orange Juice");
 
 
         for(SearchTerm st :searchCountsJson){
