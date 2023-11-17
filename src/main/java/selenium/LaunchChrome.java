@@ -72,14 +72,19 @@ public class LaunchChrome {
         ObjectMapper objectMapper = new ObjectMapper();
         List<SearchTerm> searchCountsJson = objectMapper.readValue(fetchSearchTerms("http://localhost:8080/allSearchCounts"),  new TypeReference<List<SearchTerm>>() {});
     	ArrayList<String> searchTerms = new ArrayList<String>();
+        searchTerms.add("Eggs");
+        searchTerms.add("Milk");
+        searchTerms.add("Instant Noodles");
+        searchTerms.add("Orange Juice");
 
-        System.out.println(searchCountsJson);
+
         for(SearchTerm st :searchCountsJson){
             searchTerms.add(st.searchTerm);
         }
         System.out.println(searchTerms);
 
-        String[] mainURLS = {"https://www.zehrs.ca/search?search-bar=","https://www.nofrills.ca/search?search-bar="};
+        String[] mainURLS = {"https://www.zehrs.ca/search?search-bar=","https://www.nofrills.ca/search?search-bar=", "https://www.metro.ca/en/online-grocery/search?filter="};
+
         for(String mainURL: mainURLS) {
         	for(String searchTerm: searchTerms) {
         		output.add(mainURL+searchTerm);
@@ -128,6 +133,52 @@ public class LaunchChrome {
         }
     }
 
+    public static ArrayList<Product>  scrapeMetro(String websiteURL, WebDriver driver){
+        ArrayList<Product> dataBase = new ArrayList<Product>();
+        driver.get(websiteURL);
+//        driver.findElement(By.id("onetrust-accept-btn-handler")).click();
+        List<WebElement> productDivs = driver.findElements(By.cssSelector(".item-addToCart"));
+        for(WebElement productDiv : productDivs){
+            Product p = new Product();
+            p.productThumbnail = productDiv.findElement(By.cssSelector(".defaultable-picture > img")).getAttribute("src");
+            p.productName = productDiv.findElement(By.cssSelector(".head__title")).getText();
+            p.productSellingPrice = productDiv.findElement(By.cssSelector(".pricing__sale-price")).getText();
+            p.productComparisonDetails = productDiv.findElement(By.cssSelector(".pricing__secondary-price")).getText();
+            p.productURL = websiteURL;
+            dataBase.add(p);
+        }
+        return dataBase;
+    }
+
+    public static ArrayList<Product> scrapeNoFrillsAndZehrs( String websiteURL, WebDriver driver ){
+        driver.get(websiteURL);
+        ArrayList<Product> dataBase = new ArrayList<Product>();
+        List<WebElement> productsDiv = driver.findElements(By.cssSelector("[class=\"product-tile\"]"));
+        List<WebElement> productsImages = driver.findElements(By.className("responsive-image--product-tile-image"));
+
+        String productName, sellingPrice, comparisionDetails,productThumbnail;
+        for( int i =4 ; i < Math.min(10,productsDiv.size()); i++) {
+            try{
+                if (i == 4) ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight/5)");
+                WebDriverWait wait = new WebDriverWait(driver,  Duration.ofSeconds(30));
+                wait.until(ExpectedConditions.jsReturnsValue("return document.readyState==\"complete\";"));
+
+                Product newProduct = new Product();
+                newProduct.productThumbnail = productsDiv.get(i).findElement(By.className("responsive-image--product-tile-image")).getAttribute("src");
+                newProduct.productName = productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
+                newProduct.productSellingPrice = productsDiv.get(i).findElement(By.className("selling-price-list--product-tile")).getText();
+                newProduct.productComparisonDetails = productsDiv.get(i).findElement(By.className("comparison-price-list__item__price")).getText();
+                newProduct.productURL = websiteURL;
+                dataBase.add(newProduct);
+                System.out.println(dataBase);
+
+            }catch (Exception e){
+                System.out.println(e);
+            }
+
+        }
+        return dataBase;
+    }
     @SuppressWarnings("deprecation")
 	public static void mainHelper() throws Exception {
     	System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
@@ -141,35 +192,14 @@ public class LaunchChrome {
         ArrayList<Product> dataBase = new ArrayList<Product>();
         for(int j=0;j<websites.size();j++)
         {
-        driver.get(websites.get(j));
+        String websiteURL = websites.get(j);
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
         Thread.sleep(10000);
-
-        List<WebElement> productsDiv = driver.findElements(By.cssSelector("[class=\"product-tile\"]"));
-        List<WebElement> productsImages = driver.findElements(By.className("responsive-image--product-tile-image"));
-
-            String productName, sellingPrice, comparisionDetails,productThumbnail;
-        for( int i =4 ; i < Math.min(10,productsDiv.size()); i++) {
-            try{
-                if (i == 4) ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight/5)");
-                WebDriverWait wait = new WebDriverWait(driver,  Duration.ofSeconds(30));
-                wait.until(ExpectedConditions.jsReturnsValue("return document.readyState==\"complete\";"));
-
-                Product newProduct = new Product();
-                newProduct.productThumbnail = productsDiv.get(i).findElement(By.className("responsive-image--product-tile-image")).getAttribute("src");
-                newProduct.productName = productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
-                newProduct.productSellingPrice = productsDiv.get(i).findElement(By.className("selling-price-list--product-tile")).getText();
-                newProduct.productComparisonDetails = productsDiv.get(i).findElement(By.className("comparison-price-list__item__price")).getText();
-                newProduct.productURL = websites.get(j);
-                dataBase.add(newProduct);
-                System.out.println(dataBase);
-
-            }catch (Exception e){
-                System.out.println(e);
-            }
-
+        if(websiteURL.toLowerCase().contains("zehrs") || websiteURL.toLowerCase().contains("nofrills")) dataBase.addAll(scrapeNoFrillsAndZehrs(websiteURL, driver));
+        dataBase.addAll(scrapeMetro(websiteURL, driver));
         }
-        }
+        System.out.println(dataBase);
+
         driver.close();
 
         String jsonString = convertDataToJson(dataBase);
@@ -179,7 +209,7 @@ public class LaunchChrome {
 
     public static void main(String[] args) throws Exception {
 
-        mainHelper(); // main metho
+        mainHelper(); // main method
 
 //        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 //
