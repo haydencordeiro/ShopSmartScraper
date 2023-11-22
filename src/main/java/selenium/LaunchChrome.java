@@ -32,6 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class LaunchChrome {
+    public static String HostURL = "http://localhost:8080/";
     public static class Product{
         String productName;
         String productSellingPrice;
@@ -72,27 +73,8 @@ public class LaunchChrome {
     public static ArrayList<String> getWebsites() throws JsonProcessingException {
     	ArrayList<String> output = new ArrayList<String>();
         ObjectMapper objectMapper = new ObjectMapper();
-        List<SearchTerm> searchCountsJson = objectMapper.readValue(fetchSearchTerms("http://localhost:8080/allSearchCounts"),  new TypeReference<List<SearchTerm>>() {});
-
-
-//        ArrayList<String> modifiedList = new ArrayList<>();
-//        for (String str : searchCountsJson) {
-//            String modifiedStr = str.toLowerCase().trim();
-//            modifiedList.add(modifiedStr);
-//        }
-//
-//        // Convert the modified ArrayList to a Set
-//        HashSet<String> resultSet = new HashSet<>(modifiedList);
-
-
-
+        List<SearchTerm> searchCountsJson = objectMapper.readValue(fetchSearchTerms(HostURL + "allSearchCounts"),  new TypeReference<List<SearchTerm>>() {});
         HashSet<String> searchTerms = new HashSet<String>();
-//        searchTerms.add("Eggs");
-//        searchTerms.add("Milk");
-//        searchTerms.add("Instant Noodles");
-//        searchTerms.add("Orange Juice");
-
-
         for(SearchTerm st :searchCountsJson){
             searchTerms.add(st.searchTerm.toLowerCase().strip());
         }
@@ -152,7 +134,7 @@ public class LaunchChrome {
         WebDriverWait wait = new WebDriverWait(driver,  Duration.ofSeconds(30));
         wait.until(ExpectedConditions.jsReturnsValue("return document.readyState==\"complete\";"));
 //        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.className("root-spinner-wrapper")));
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         slowScrollToBottom(driver);
         ArrayList<Product> dataBase = new ArrayList<Product>();
         driver.get(websiteURL);
@@ -195,14 +177,7 @@ public class LaunchChrome {
         wait.until(ExpectedConditions.jsReturnsValue("return document.readyState==\"complete\";"));
         wait.until(ExpectedConditions.invisibilityOfElementLocated(By.className("root-spinner-wrapper")));
         Thread.sleep(1000);
-
         slowScrollToBottom(driver);
-//        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight)");
-//       Thread.sleep(10000);
-
-
-
-
         ArrayList<Product> dataBase = new ArrayList<Product>();
         List<WebElement> productsDiv = driver.findElements(By.cssSelector("[class=\"product-tile\"]"));
         List<WebElement> productsImages = driver.findElements(By.className("responsive-image--product-tile-image"));
@@ -237,27 +212,27 @@ public class LaunchChrome {
 
 
         ArrayList<String> websites = getWebsites();
-
-//        HashMap<String, HashMap<String,String>> dataBase = new HashMap<String, HashMap<String,String>>();
         ArrayList<Product> dataBase = new ArrayList<Product>();
         for(int j=0;j<websites.size();j++)
         {
         String websiteURL = websites.get(j);
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-//        Thread.sleep(10000);
+        System.out.println("____________________________________________");
+        System.out.println(websiteURL);
             if(websiteURL.toLowerCase().contains("zehrs") || websiteURL.toLowerCase().contains("nofrills")) {
-                dataBase.addAll(scrapeNoFrillsAndZehrs(websiteURL, driver));
+                dataBase = (scrapeNoFrillsAndZehrs(websiteURL, driver));
             }
             else{
-                dataBase.addAll(scrapeMetro(websiteURL, driver));
+                dataBase = (scrapeMetro(websiteURL, driver));
             }
+
+            String jsonString = convertDataToJson(dataBase);
+                sendPostRequest(HostURL + "insertdata", jsonString);
         }
-        System.out.println(dataBase);
+//        System.out.println(dataBase);
 
         driver.close();
 
-        String jsonString = convertDataToJson(dataBase);
-        sendPostRequest("http://localhost:8080/insertdata", jsonString);
     }
 
 
