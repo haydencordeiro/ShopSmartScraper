@@ -9,6 +9,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
@@ -20,6 +21,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.openqa.selenium.JavascriptExecutor;
@@ -71,7 +73,20 @@ public class LaunchChrome {
     	ArrayList<String> output = new ArrayList<String>();
         ObjectMapper objectMapper = new ObjectMapper();
         List<SearchTerm> searchCountsJson = objectMapper.readValue(fetchSearchTerms("http://localhost:8080/allSearchCounts"),  new TypeReference<List<SearchTerm>>() {});
-    	ArrayList<String> searchTerms = new ArrayList<String>();
+
+
+//        ArrayList<String> modifiedList = new ArrayList<>();
+//        for (String str : searchCountsJson) {
+//            String modifiedStr = str.toLowerCase().trim();
+//            modifiedList.add(modifiedStr);
+//        }
+//
+//        // Convert the modified ArrayList to a Set
+//        HashSet<String> resultSet = new HashSet<>(modifiedList);
+
+
+
+        HashSet<String> searchTerms = new HashSet<String>();
 //        searchTerms.add("Eggs");
 //        searchTerms.add("Milk");
 //        searchTerms.add("Instant Noodles");
@@ -79,11 +94,11 @@ public class LaunchChrome {
 
 
         for(SearchTerm st :searchCountsJson){
-            searchTerms.add(st.searchTerm);
+            searchTerms.add(st.searchTerm.toLowerCase().strip());
         }
         System.out.println(searchTerms);
 
-        String[] mainURLS = {"https://www.zehrs.ca/search?search-bar=","https://www.nofrills.ca/search?search-bar=", "https://www.metro.ca/en/online-grocery/search?filter="};
+        String[] mainURLS = {"https://www.nofrills.ca/search?search-bar=", "https://www.metro.ca/en/online-grocery/search?filter=", "https://www.zehrs.ca/search?search-bar="};
 
         for(String mainURL: mainURLS) {
         	for(String searchTerm: searchTerms) {
@@ -133,10 +148,14 @@ public class LaunchChrome {
         }
     }
 
-    public static ArrayList<Product>  scrapeMetro(String websiteURL, WebDriver driver){
+    public static ArrayList<Product>  scrapeMetro(String websiteURL, WebDriver driver) throws InterruptedException {
+        WebDriverWait wait = new WebDriverWait(driver,  Duration.ofSeconds(30));
+        wait.until(ExpectedConditions.jsReturnsValue("return document.readyState==\"complete\";"));
+//        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.className("root-spinner-wrapper")));
+        Thread.sleep(1000);
+        slowScrollToBottom(driver);
         ArrayList<Product> dataBase = new ArrayList<Product>();
         driver.get(websiteURL);
-//        driver.findElement(By.id("onetrust-accept-btn-handler")).click();
         List<WebElement> productDivs = driver.findElements(By.cssSelector(".item-addToCart"));
         for(WebElement productDiv : productDivs){
             Product p = new Product();
@@ -145,24 +164,54 @@ public class LaunchChrome {
             p.productSellingPrice = productDiv.findElement(By.cssSelector(".pricing__sale-price")).getText();
             p.productComparisonDetails = productDiv.findElement(By.cssSelector(".pricing__secondary-price")).getText();
             p.productURL = websiteURL;
+            System.out.println(p.productName);
             dataBase.add(p);
         }
         return dataBase;
     }
+    private static void slowScrollToBottom(WebDriver driver) {
+        JavascriptExecutor js = (JavascriptExecutor) driver;
 
-    public static ArrayList<Product> scrapeNoFrillsAndZehrs( String websiteURL, WebDriver driver ){
+        long windowHeight = (long) js.executeScript("return window.innerHeight");
+        long pageHeight = (long) js.executeScript("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight)");
+
+        long scrollIncrement = 80; // You can adjust this value to control the scroll speed
+
+        for (long currentScroll = 0; currentScroll < pageHeight; currentScroll += scrollIncrement) {
+            js.executeScript("window.scrollTo(0, " + currentScroll + ")");
+            try {
+                // Add a short delay between scrolls to slow down the scrolling
+                Thread.sleep(100); // You can adjust this value to control the delay
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    public static ArrayList<Product> scrapeNoFrillsAndZehrs( String websiteURL, WebDriver driver ) throws InterruptedException {
         driver.get(websiteURL);
+        WebDriverWait wait = new WebDriverWait(driver,  Duration.ofSeconds(30));
+        wait.until(ExpectedConditions.jsReturnsValue("return document.readyState==\"complete\";"));
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.className("root-spinner-wrapper")));
+        Thread.sleep(1000);
+
+        slowScrollToBottom(driver);
+//        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight)");
+//       Thread.sleep(10000);
+
+
+
+
         ArrayList<Product> dataBase = new ArrayList<Product>();
         List<WebElement> productsDiv = driver.findElements(By.cssSelector("[class=\"product-tile\"]"));
         List<WebElement> productsImages = driver.findElements(By.className("responsive-image--product-tile-image"));
+        System.out.print("Product Div " +productsDiv.size());
+        System.out.print("Product IMG " +productsImages.size());
 
         String productName, sellingPrice, comparisionDetails,productThumbnail;
-        for( int i =4 ; i < Math.min(10,productsDiv.size()); i++) {
+        for( int i =4 ; i < Math.min(40,productsDiv.size()); i++) {
             try{
-                if (i == 4) ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight/5)");
-                WebDriverWait wait = new WebDriverWait(driver,  Duration.ofSeconds(30));
-                wait.until(ExpectedConditions.jsReturnsValue("return document.readyState==\"complete\";"));
-
                 Product newProduct = new Product();
                 newProduct.productThumbnail = productsDiv.get(i).findElement(By.className("responsive-image--product-tile-image")).getAttribute("src");
                 newProduct.productName = productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
@@ -170,10 +219,10 @@ public class LaunchChrome {
                 newProduct.productComparisonDetails = productsDiv.get(i).findElement(By.className("comparison-price-list__item__price")).getText();
                 newProduct.productURL = websiteURL;
                 dataBase.add(newProduct);
-                System.out.println(dataBase);
+                System.out.println(newProduct.productName);
 
             }catch (Exception e){
-                System.out.println(e);
+//                System.out.println(e);
             }
 
         }
@@ -182,9 +231,10 @@ public class LaunchChrome {
     @SuppressWarnings("deprecation")
 	public static void mainHelper() throws Exception {
     	System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
-        WebDriver driver = new ChromeDriver();
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("headless");
+        WebDriver driver = new ChromeDriver(options);
 
-        driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
 
         ArrayList<String> websites = getWebsites();
 
@@ -194,9 +244,13 @@ public class LaunchChrome {
         {
         String websiteURL = websites.get(j);
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-        Thread.sleep(10000);
-        if(websiteURL.toLowerCase().contains("zehrs") || websiteURL.toLowerCase().contains("nofrills")) dataBase.addAll(scrapeNoFrillsAndZehrs(websiteURL, driver));
-        dataBase.addAll(scrapeMetro(websiteURL, driver));
+//        Thread.sleep(10000);
+            if(websiteURL.toLowerCase().contains("zehrs") || websiteURL.toLowerCase().contains("nofrills")) {
+                dataBase.addAll(scrapeNoFrillsAndZehrs(websiteURL, driver));
+            }
+            else{
+                dataBase.addAll(scrapeMetro(websiteURL, driver));
+            }
         }
         System.out.println(dataBase);
 
