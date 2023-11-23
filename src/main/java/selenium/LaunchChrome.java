@@ -1,7 +1,6 @@
 package selenium;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.google.gson.Gson;
@@ -13,23 +12,19 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
-import java.util.ArrayList; // import the ArrayList class
-import java.util.HashMap;
+import java.util.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class LaunchChrome {
     public static String HostURL = "http://localhost:8080/";
@@ -47,7 +42,7 @@ public class LaunchChrome {
         public int searchCount;
         public String searchTerm;
     }
-    public static String fetchSearchTerms(String urlString) {
+    public static String getMethodHelper(String urlString) {
         StringBuilder result = new StringBuilder();
 
         try {
@@ -70,15 +65,29 @@ public class LaunchChrome {
 
         return result.toString();
     }
-    public static ArrayList<String> getWebsites() throws JsonProcessingException {
-    	ArrayList<String> output = new ArrayList<String>();
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<SearchTerm> searchCountsJson = objectMapper.readValue(fetchSearchTerms(HostURL + "allSearchCounts"),  new TypeReference<List<SearchTerm>>() {});
+    public static ArrayList<String> getWebsites(boolean isNightlyRun) throws JsonProcessingException {
+        ArrayList<String> output = new ArrayList<String>();
         HashSet<String> searchTerms = new HashSet<String>();
-        for(SearchTerm st :searchCountsJson){
-            searchTerms.add(st.searchTerm.toLowerCase().strip());
+
+        if(isNightlyRun) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<SearchTerm> searchCountsJson = objectMapper.readValue(getMethodHelper(HostURL + "allSearchCounts"), new TypeReference<List<SearchTerm>>() {
+            });
+            for (SearchTerm st : searchCountsJson) {
+                System.out.println(st.id);
+                searchTerms.add(st.searchTerm.toLowerCase().strip());
+            }
         }
+        else{
+            ObjectMapper objectMapper = new ObjectMapper();
+            searchTerms = objectMapper.readValue(getMethodHelper(HostURL + "newSearchTerms"),  new TypeReference<HashSet<String>>() {});
+        }
+
         System.out.println(searchTerms);
+
+        if(searchTerms.isEmpty()){
+            return output;
+        }
 
         String[] mainURLS = {"https://www.nofrills.ca/search?search-bar=", "https://www.metro.ca/en/online-grocery/search?filter=", "https://www.zehrs.ca/search?search-bar="};
 
@@ -204,14 +213,14 @@ public class LaunchChrome {
         return dataBase;
     }
     @SuppressWarnings("deprecation")
-	public static void mainHelper() throws Exception {
+	public static void mainHelper(boolean isNightlyRum) throws Exception {
     	System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
         ChromeOptions options = new ChromeOptions();
         options.addArguments("headless");
         WebDriver driver = new ChromeDriver(options);
 
 
-        ArrayList<String> websites = getWebsites();
+        ArrayList<String> websites = getWebsites(isNightlyRum);
         ArrayList<Product> dataBase = new ArrayList<Product>();
         for(int j=0;j<websites.size();j++)
         {
@@ -230,7 +239,10 @@ public class LaunchChrome {
                 sendPostRequest(HostURL + "insertdata", jsonString);
         }
 //        System.out.println(dataBase);
-
+        if(!isNightlyRum)
+        {
+            getMethodHelper(HostURL + "clearNewSearchTerms");
+        }
         driver.close();
 
     }
@@ -238,19 +250,28 @@ public class LaunchChrome {
 
     public static void main(String[] args) throws Exception {
 
-        mainHelper(); // main method
+//        mainHelper(false); // main method
 
-//        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-//
-//        // Schedule the task to run every 60 minutes
-//        scheduler.scheduleAtFixedRate(() -> {
-//            try {
-//                System.out.println("Executing task...");
-//                mainHelper(); // main metho
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }, 0, 60, TimeUnit.MINUTES);
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+        // Schedule the task to run every day once
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                System.out.println("Executing Nightly Run...");
+                mainHelper(true); // main metho
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 24, 24, TimeUnit.HOURS);
+
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                System.out.println("Executing New Terms Run...");
+                mainHelper(false); // main metho
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 0, 10, TimeUnit.SECONDS);
     }
 }
 
