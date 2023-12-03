@@ -94,7 +94,6 @@ public class LaunchChrome {
                     new TypeReference<List<SearchTerm>>() {}
             );
             for (SearchTerm st : searchCountsJson) {
-                System.out.println(st.id);
                 searchTerms.add(st.searchTerm.toLowerCase().strip());
             }
         } else {
@@ -120,7 +119,7 @@ public class LaunchChrome {
 
         for (String mainURL : mainURLS) {
             for (String searchTerm : searchTerms) {
-                output.add(mainURL + searchTerm);
+                output.add((mainURL + searchTerm).replace("\"", ""));
             }
         }
         return output;
@@ -334,17 +333,16 @@ public class LaunchChrome {
      */
     public static void main(String[] args) throws Exception {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
 //         Schedule the task to run every day once
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                System.out.println("Executing Nightly Run...");
-                mainHelper(true); // main method
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }, 24, 24, TimeUnit.HOURS);
-//
+//        scheduler.scheduleAtFixedRate(() -> {
+//            try {
+//                System.out.println("Executing Nightly Run...");
+//                mainHelper(true); // main method
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }, 24, 24, TimeUnit.HOURS);
+////
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 System.out.println("Executing New Terms Run...");
