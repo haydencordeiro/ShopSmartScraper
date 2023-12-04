@@ -202,7 +202,7 @@ public class LaunchChrome {
         for (WebElement productDiv : productDivs) {
             Product p = new Product();
             p.productThumbnail = productDiv.findElement(By.cssSelector(".defaultable-picture > img")).getAttribute("src");
-            p.productName = productDiv.findElement(By.cssSelector(".head__title")).getText();
+            p.productName = "metro - " + productDiv.findElement(By.cssSelector(".head__title")).getText();
             p.productSellingPrice = productDiv.findElement(By.cssSelector(".pricing__sale-price")).getText();
             p.productComparisonDetails = productDiv.findElement(By.cssSelector(".pricing__secondary-price")).getText();
             p.productURL = websiteURL;
@@ -244,7 +244,7 @@ public class LaunchChrome {
      * @return List of Product objects containing scraped data
      * @throws InterruptedException If there is an interruption during execution
      */
-    public static ArrayList<Product> scrapeNoFrillsAndZehrs(String websiteURL, WebDriver driver) throws InterruptedException {
+    public static ArrayList<Product> scrapeNoFrillsAndZehrs(String websiteURL, WebDriver driver, String websiteName) throws InterruptedException {
         driver.get(websiteURL);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
         wait.until(ExpectedConditions.jsReturnsValue("return document.readyState==\"complete\";"));
@@ -262,7 +262,7 @@ public class LaunchChrome {
             try {
                 Product newProduct = new Product();
                 newProduct.productThumbnail = productsDiv.get(i).findElement(By.className("responsive-image--product-tile-image")).getAttribute("src");
-                newProduct.productName = productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
+                newProduct.productName = websiteName + " -" + productsDiv.get(i).findElement(By.className("product-name--product-tile")).getText();
                 newProduct.productSellingPrice = productsDiv.get(i).findElement(By.className("selling-price-list--product-tile")).getText();
                 newProduct.productComparisonDetails = productsDiv.get(i).findElement(By.className("comparison-price-list__item__price")).getText();
                 newProduct.productURL = websiteURL;
@@ -300,8 +300,10 @@ public class LaunchChrome {
                 driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
                 System.out.println("____________________________________________");
                 System.out.println(websiteURL);
-                if (websiteURL.toLowerCase().contains("zehrs") || websiteURL.toLowerCase().contains("nofrills")) {
-                    dataBase = (scrapeNoFrillsAndZehrs(websiteURL, driver));
+                if (websiteURL.toLowerCase().contains("zehrs")) {
+                    dataBase = (scrapeNoFrillsAndZehrs(websiteURL, driver, "zehrs"));
+                } else if (websiteURL.toLowerCase().contains("nofrills")) {
+                    dataBase = (scrapeNoFrillsAndZehrs(websiteURL, driver, "nofrills"));
                 } else {
                     dataBase = (scrapeMetro(websiteURL, driver));
                 }
@@ -332,6 +334,7 @@ public class LaunchChrome {
      * @throws Exception If there is an issue during execution
      */
     public static void main(String[] args) throws Exception {
+        mainHelper(true);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 //         Schedule the task to run every day once
 //        scheduler.scheduleAtFixedRate(() -> {
@@ -343,13 +346,13 @@ public class LaunchChrome {
 //            }
 //        }, 24, 24, TimeUnit.HOURS);
 ////
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                System.out.println("Executing New Terms Run...");
-                mainHelper(false); // main method
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }, 0, 10, TimeUnit.SECONDS);
+//        scheduler.scheduleAtFixedRate(() -> {
+//            try {
+//                System.out.println("Executing New Terms Run...");
+//                mainHelper(false); // main method
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }, 0, 10, TimeUnit.SECONDS);
     }
 }
