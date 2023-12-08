@@ -294,6 +294,9 @@ public class LaunchChrome {
             WebDriver driver = new ChromeDriver(options);
 
             ArrayList<String> websites = getWebsites(isNightlyRum);
+            if (!isNightlyRum) {
+                getMethodHelper(HostURL + "clearNewSearchTerms");
+            }
             ArrayList<Product> dataBase = new ArrayList<Product>();
             for (int j = 0; j < websites.size(); j++) {
                 String websiteURL = websites.get(j);
@@ -311,9 +314,7 @@ public class LaunchChrome {
                 String jsonString = convertDataToJson(dataBase);
                 sendPostRequest(HostURL + "insertdata", jsonString);
             }
-            if (!isNightlyRum) {
-                getMethodHelper(HostURL + "clearNewSearchTerms");
-            }
+
             driver.close();
         }
         catch (WebDriverException e) {
@@ -334,7 +335,7 @@ public class LaunchChrome {
      * @throws Exception If there is an issue during execution
      */
     public static void main(String[] args) throws Exception {
-        mainHelper(true);
+//        mainHelper(true);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 //         Schedule the task to run every day once
 //        scheduler.scheduleAtFixedRate(() -> {
@@ -345,14 +346,14 @@ public class LaunchChrome {
 //                e.printStackTrace();
 //            }
 //        }, 24, 24, TimeUnit.HOURS);
-////
-//        scheduler.scheduleAtFixedRate(() -> {
-//            try {
-//                System.out.println("Executing New Terms Run...");
-//                mainHelper(false); // main method
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }, 0, 10, TimeUnit.SECONDS);
+//
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                System.out.println("Executing New Terms Run...");
+                mainHelper(false); // main method
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 0, 20, TimeUnit.SECONDS);
     }
 }
